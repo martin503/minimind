@@ -89,7 +89,7 @@ def train_epoch(epoch, wandb):
             else:
                 state_dict = model.state_dict()
 
-            state_dict = {k: v.half() for k, v in state_dict.items()}  # 半精度保存
+            state_dict = {k: v.half() for k, v in state_dict.items()}  #  half precision saving 
             torch.save(state_dict, ckp)
             model.train()
 
@@ -97,7 +97,7 @@ def train_epoch(epoch, wandb):
 def init_model(lm_config):
     tokenizer = AutoTokenizer.from_pretrained('../model/')
     model = MiniMindForCausalLM(lm_config).to(args.device)
-    Logger(f'LLM可训练总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f'LLM total training parameters ：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     return model, tokenizer
 
 
@@ -117,7 +117,7 @@ def init_distributed_mode():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Pretraining")
     parser.add_argument("--out_dir", type=str, default="../out")
-    # 若要以最快速度实现zero则epochs设置为1轮；否则应当利用有限的数据训练2~6个epochs。
+    #  to achieve it at the fastest speed zero but epochs set as 1 wheel ； otherwise, limited data should be used to train 2~6 indivual epochs。
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=5e-4)
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of 
         torch.cuda.manual_seed(base_seed + rank)
 
     if args.use_wandb and (not ddp or ddp_local_rank == 0):

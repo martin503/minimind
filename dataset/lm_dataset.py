@@ -34,7 +34,7 @@ class PretrainDataset(Dataset):
     def __getitem__(self, index):
         sample = self.samples[index]
 
-        # 构建输入文本
+        #  build input text 
         encoding = self.tokenizer(
             str(sample['text']),
             max_length=self.max_length,
@@ -72,7 +72,7 @@ class SFTDataset(Dataset):
         return samples
 
     def _create_chat_prompt(self, conversations):
-        """构建符合ChatML格式的对话"""
+        """ build conform ChatML format dialogue """
         messages = []
         for i, turn in enumerate(conversations):
             role = 'user' if i % 2 == 0 else 'assistant'
@@ -103,18 +103,18 @@ class SFTDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.samples[index]
-        # 构建对话提示
+        #  build a conversation prompt 
         prompt = self._create_chat_prompt(sample['conversations'])
         input_ids = self.tokenizer(prompt).input_ids[:self.max_length]
         input_ids += [self.tokenizer.pad_token_id] * (self.max_length - len(input_ids))
 
-        # 生成动态损失掩码
+        #  generate dynamic loss mask 
         loss_mask = self._generate_loss_mask(input_ids)
 
-        # 构建训练数据
+        #  build training data 
         X = torch.tensor(input_ids[:-1], dtype=torch.long)
         Y = torch.tensor(input_ids[1:], dtype=torch.long)
-        loss_mask = torch.tensor(loss_mask[1:], dtype=torch.long)  # 对齐预测位置
+        loss_mask = torch.tensor(loss_mask[1:], dtype=torch.long)  #  align predicted positions 
 
         return X, Y, loss_mask
 
@@ -139,8 +139,8 @@ class DPODataset(Dataset):
 
     def __getitem__(self, index):
         item = self.data[index]
-        chosen = item['chosen']  # 是一个 list，里面包含若干 {role, content}
-        rejected = item['rejected']  # 同上
+        chosen = item['chosen']  #  it's one  list， includes several  {role, content}
+        rejected = item['rejected']  #  same as above 
         chosen_prompt = self.tokenizer.apply_chat_template(
             chosen, tokenize=False, add_generation_prompt=False
         )
@@ -216,7 +216,7 @@ class RLAIFDataset(Dataset):
         return samples
 
     def _create_chat_prompt(self, conversations):
-        """构建符合ChatML格式的对话"""
+        """ build conform ChatML format dialogue """
         messages = []
         answer = ''
         for i, turn in enumerate(conversations):
@@ -231,7 +231,7 @@ class RLAIFDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.samples[index]
-        # 构建对话提示
+        #  build a conversation prompt 
         prompt, answer = self._create_chat_prompt(sample['conversations'])
 
         return {

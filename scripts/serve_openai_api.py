@@ -44,7 +44,7 @@ def init_model(args):
         model_path = '../MiniMind2'
         model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True)
         tokenizer = AutoTokenizer.from_pretrained(model_path)
-    print(f'MiniMind模型参数量: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.2f}M(illion)')
+    print(f'MiniMind model parameter quantity : {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.2f}M(illion)')
     return model.eval().to(device), tokenizer
 
 
@@ -169,9 +169,9 @@ if __name__ == "__main__":
     parser.add_argument('--num_hidden_layers', default=16, type=int)
     parser.add_argument('--max_seq_len', default=8192, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
-    parser.add_argument('--load', default=0, type=int, help="0: 从原生torch权重，1: 利用transformers加载")
+    parser.add_argument('--load', default=0, type=int, help="0:  from native torch weight ，1:  use transformers load ")
     parser.add_argument('--model_mode', default=1, type=int,
-                        help="0: 预训练模型，1: SFT-Chat模型，2: RLHF-Chat模型，3: Reason模型")
+                        help="0:  pre-trained model ，1: SFT-Chat model ，2: RLHF-Chat model ，3: Reason model ")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model, tokenizer = init_model(parser.parse_args())
     uvicorn.run(app, host="0.0.0.0", port=8998)

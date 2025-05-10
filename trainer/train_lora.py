@@ -31,7 +31,7 @@ def get_lr(current_step, total_steps, lr):
     return lr / 10 + 0.5 * lr * (1 + math.cos(math.pi * current_step / total_steps))
 
 
-# 代码和full_sft「几乎」一致
+#  code and full_sft「 almost 」 consistent 
 def train_epoch(epoch, wandb):
     loss_fct = nn.CrossEntropyLoss(reduction='none')
     start_time = time.time()
@@ -85,7 +85,7 @@ def train_epoch(epoch, wandb):
             model.eval()
             lora_save_path = f'{args.save_dir}/lora/{args.lora_name}_{lm_config.hidden_size}.pth'
             os.makedirs(os.path.dirname(lora_save_path), exist_ok=True)
-            # 【区别1】只保存lora权重即可
+            # 【 the difference 1】 save only lora just weight 
             save_lora(model, lora_save_path)
             model.train()
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_seq_len', default=512, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
     parser.add_argument("--data_path", type=str, default="../dataset/lora_medical.jsonl")
-    parser.add_argument("--lora_name", type=str, default="lora_medical", help="根据任务保存成lora_(英文/医学/心理...)")
+    parser.add_argument("--lora_name", type=str, default="lora_medical", help=" save as per task lora_( english / medicine / psychology ...)")
     args = parser.parse_args()
 
     lm_config = MiniMindConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers,
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of 
         torch.cuda.manual_seed(base_seed + rank)
 
     args.wandb_run_name = f"MiniMind-Lora-SFT-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
@@ -172,12 +172,12 @@ if __name__ == "__main__":
     model, tokenizer = init_model(lm_config)
     apply_lora(model)
 
-    total_params = sum(p.numel() for p in model.parameters())  # 总参数数量
-    lora_params_count = sum(p.numel() for name, p in model.named_parameters() if 'lora' in name)  # LoRA 参数数量
+    total_params = sum(p.numel() for p in model.parameters())  #  total number of parameters 
+    lora_params_count = sum(p.numel() for name, p in model.named_parameters() if 'lora' in name)  # LoRA  number of parameters 
     if not ddp or dist.get_rank() == 0:
-        print(f"LLM 总参数量: {total_params}")
-        print(f"LoRA 参数量: {lora_params_count}")
-        print(f"LoRA 参数占比: {lora_params_count / total_params * 100:.2f}%")
+        print(f"LLM  total parameter quantity : {total_params}")
+        print(f"LoRA  parameter quantity : {lora_params_count}")
+        print(f"LoRA  parameter ratio : {lora_params_count / total_params * 100:.2f}%")
 
     for name, param in model.named_parameters():
         if 'lora' not in name:
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         if 'lora' in name:
             lora_params.append(param)
 
-    # 只对 LoRA 参数进行优化
+    #  only right  LoRA  optimize parameters 
     optimizer = optim.AdamW(lora_params, lr=args.learning_rate)
     train_ds = SFTDataset(args.data_path, tokenizer, max_length=args.max_seq_len)
     train_sampler = DistributedSampler(train_ds) if ddp else None

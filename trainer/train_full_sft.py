@@ -88,7 +88,7 @@ def train_epoch(epoch, wandb):
                 state_dict = model.module.state_dict()
             else:
                 state_dict = model.state_dict()
-            state_dict = {k: v.half() for k, v in state_dict.items()}  # 半精度保存
+            state_dict = {k: v.half() for k, v in state_dict.items()}  #  half precision saving
             torch.save(state_dict, ckp)
             model.train()
 
@@ -101,7 +101,7 @@ def init_model(lm_config):
     state_dict = torch.load(ckp, map_location=args.device)
     model.load_state_dict(state_dict, strict=False)
 
-    Logger(f'LLM可训练总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f'LLM Total trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     model = model.to(args.device)
     return model, tokenizer
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of
         torch.cuda.manual_seed(base_seed + rank)
 
     if args.use_wandb and (not ddp or ddp_local_rank == 0):

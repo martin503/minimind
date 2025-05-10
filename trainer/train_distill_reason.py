@@ -31,7 +31,7 @@ def get_lr(current_step, total_steps, lr):
 
 
 def train_epoch(epoch, wandb):
-    # 思考标签占位符
+    #  thinking about tag placeholders 
     start_of_think_ids = tokenizer('<think>').input_ids
     end_of_think_ids = tokenizer('</think>').input_ids
     start_of_answer_ids = tokenizer('<answer>').input_ids
@@ -56,7 +56,7 @@ def train_epoch(epoch, wandb):
                                 torch.tensor(start_of_think_ids + end_of_think_ids
                                              + start_of_answer_ids + end_of_answer_ids
                                              ).to(args.device))
-            # 在 sp_ids 对应的位置增加额外的惩罚
+            #  exist  sp_ids  additional penalty is added to the corresponding position 
             loss_mask = loss_mask.view(-1)
             loss_mask_sum = loss_mask.sum()
             loss_mask[sp_ids] = 10
@@ -103,7 +103,7 @@ def train_epoch(epoch, wandb):
             else:
                 state_dict = model.state_dict()
 
-            state_dict = {k: v.half() for k, v in state_dict.items()}  # 半精度保存
+            state_dict = {k: v.half() for k, v in state_dict.items()}  #  half precision saving 
             torch.save(state_dict, ckp)
             model.train()
 
@@ -115,7 +115,7 @@ def init_model(lm_config):
     ckp = f'{args.save_dir}/rlhf_{lm_config.hidden_size}{moe_path}.pth'
     state_dict = torch.load(ckp, map_location=args.device)
     model.load_state_dict(state_dict, strict=False)
-    Logger(f'LLM总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f'LLM total parameter quantity ：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     model = model.to(args.device)
     return model, tokenizer
 
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of 
         torch.cuda.manual_seed(base_seed + rank)
 
     if args.use_wandb and (not ddp or ddp_local_rank == 0):

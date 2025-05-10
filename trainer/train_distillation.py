@@ -62,20 +62,20 @@ def train_epoch(epoch, wandb, alpha=0.0, temperature=1.0):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
-        # 前向传播（学生模型）
+        #  forward communication （ student model ）
         with ctx:
             res = model(X)
             student_logits = res.logits
 
-        # 教师模型前向传播（只在eval & no_grad）
+        #  forward communication of teacher models （ only in eval & no_grad）
         if teacher_model is not None:
             with torch.no_grad():
                 teacher_logits = teacher_model(X).logits
                 vocab_size_student = student_logits.size(-1)  # N
                 teacher_logits = teacher_logits[..., :vocab_size_student]
 
-        # ========== 计算损失 ==========
-        # 1) Ground-Truth CE Loss（可选）
+        # ==========  calculate the loss  ==========
+        # 1) Ground-Truth CE Loss（ optional ）
         loss_mask_flat = loss_mask.view(-1)
         ce_loss = F.cross_entropy(
             student_logits.view(-1, student_logits.size(-1)),
@@ -87,9 +87,9 @@ def train_epoch(epoch, wandb, alpha=0.0, temperature=1.0):
         if lm_config_student.use_moe:
             ce_loss += res.aux_loss
 
-        # 2) Distillation Loss（可选）
+        # 2) Distillation Loss（ optional ）
         if teacher_model is not None:
-            # 只在有效token位置做蒸馏
+            #  only valid token distillation at the location 
             distill_loss = distillation_loss_fn(
                 student_logits.view(-1, student_logits.size(-1))[loss_mask_flat == 1],
                 teacher_logits.view(-1, teacher_logits.size(-1))[loss_mask_flat == 1],
@@ -98,7 +98,7 @@ def train_epoch(epoch, wandb, alpha=0.0, temperature=1.0):
         else:
             distill_loss = torch.tensor(0.0, device=args.device)
 
-        # 3) 总损失 = alpha * CE + (1-alpha) * Distill
+        # 3)  total loss  = alpha * CE + (1-alpha) * Distill
         loss = (alpha * ce_loss + (1 - alpha) * distill_loss) / args.accumulation_steps
 
         scaler.scale(loss).backward()
@@ -141,7 +141,7 @@ def train_epoch(epoch, wandb, alpha=0.0, temperature=1.0):
                 state_dict = model.module.state_dict()
             else:
                 state_dict = model.state_dict()
-            state_dict = {k: v.half() for k, v in state_dict.items()}  # 半精度保存
+            state_dict = {k: v.half() for k, v in state_dict.items()}  #  half precision saving 
             torch.save(state_dict, ckp)
             model.train()
 
@@ -153,7 +153,7 @@ def init_student_model(lm_config):
     ckp = f'{args.save_dir}/full_sft_{lm_config.hidden_size}{moe_path}.pth'
     state_dict = torch.load(ckp, map_location=args.device)
     model.load_state_dict(state_dict, strict=False)
-    Logger(f'学生模型(LLM)总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f' student model (LLM) total parameter quantity ：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     model = model.to(args.device)
 
     return model, tokenizer
@@ -165,7 +165,7 @@ def init_teacher_model(lm_config):
     ckp = f'{args.save_dir}/full_sft_{lm_config.hidden_size}{moe_path}.pth'
     state_dict = torch.load(ckp, map_location=args.device)
     model.load_state_dict(state_dict, strict=False)
-    Logger(f'教师模型(LLM)总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f' teacher model (LLM) total parameter quantity ：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     model = model.to(args.device)
     return model
 
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, default="../dataset/sft_xxx.jsonl")
 
     args = parser.parse_args()
-    # 定义学生模型和教师模型
+    #  define student models and teacher models 
     lm_config_student = MiniMindConfig(hidden_size=512, num_hidden_layers=8)
     lm_config_teacher = MiniMindConfig(hidden_size=768, num_hidden_layers=16)
     args.save_dir = os.path.join(args.out_dir)
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of 
         torch.cuda.manual_seed(base_seed + rank)
 
     if args.use_wandb and (not ddp or ddp_local_rank == 0):
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     else:
         wandb = None
 
-    # 初始化学生模型和教师模型
+    #  initialize student models and teacher models 
     model, tokenizer = init_student_model(lm_config_student)
     teacher_model = init_teacher_model(lm_config_teacher)
 

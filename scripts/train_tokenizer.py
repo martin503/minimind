@@ -13,7 +13,7 @@ random.seed(42)
 
 
 def train_tokenizer():
-    # 读取JSONL文件并提取文本数据
+    #  read JSONL file and extract text data 
     def read_texts_from_jsonl(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
@@ -22,42 +22,42 @@ def train_tokenizer():
 
     data_path = '../dataset/pretrain_hq.jsonl'
 
-    # 初始化tokenizer
+    #  initialization tokenizer
     tokenizer = Tokenizer(models.BPE())
     tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
 
-    # 定义特殊token
+    #  definition of special token
     special_tokens = ["<|endoftext|>", "<|im_start|>", "<|im_end|>"]
 
-    # 设置训练器并添加特殊token
+    #  set up the trainer and add special token
     trainer = trainers.BpeTrainer(
         vocab_size=6400,
-        special_tokens=special_tokens,  # 确保这三个token被包含
+        special_tokens=special_tokens,  #  make sure these three token contained 
         show_progress=True,
         initial_alphabet=pre_tokenizers.ByteLevel.alphabet()
     )
 
-    # 读取文本数据
+    #  read text data 
     texts = read_texts_from_jsonl(data_path)
 
-    # 训练tokenizer
+    #  train tokenizer
     tokenizer.train_from_iterator(texts, trainer=trainer)
 
-    # 设置解码器
+    #  set up the decoder 
     tokenizer.decoder = decoders.ByteLevel()
 
-    # 检查特殊token的索引
+    #  check for special token index of 
     assert tokenizer.token_to_id("<|endoftext|>") == 0
     assert tokenizer.token_to_id("<|im_start|>") == 1
     assert tokenizer.token_to_id("<|im_end|>") == 2
 
-    # 保存tokenizer
+    #  keep tokenizer
     tokenizer_dir = "../model/"
     os.makedirs(tokenizer_dir, exist_ok=True)
     tokenizer.save(os.path.join(tokenizer_dir, "tokenizer.json"))
     tokenizer.model.save("../model/")
 
-    # 手动创建配置文件
+    #  create configuration files manually 
     config = {
         "add_bos_token": False,
         "add_eos_token": False,
@@ -102,7 +102,7 @@ def train_tokenizer():
         "chat_template": "{% if messages[0]['role'] == 'system' %}{% set system_message = messages[0]['content'] %}{{ '<|im_start|>system\\n' + system_message + '<|im_end|>\\n' }}{% else %}{{ '<|im_start|>system\\nYou are a helpful assistant<|im_end|>\\n' }}{% endif %}{% for message in messages %}{% set content = message['content'] %}{% if message['role'] == 'user' %}{{ '<|im_start|>user\\n' + content + '<|im_end|>\\n<|im_start|>assistant\\n' }}{% elif message['role'] == 'assistant' %}{{ content + '<|im_end|>' + '\\n' }}{% endif %}{% endfor %}"
     }
 
-    # 保存配置文件
+    #  save configuration file 
     with open(os.path.join(tokenizer_dir, "tokenizer_config.json"), "w", encoding="utf-8") as config_file:
         json.dump(config, config_file, ensure_ascii=False, indent=4)
 
@@ -112,13 +112,13 @@ def train_tokenizer():
 def eval_tokenizer():
     from transformers import AutoTokenizer
 
-    # 加载预训练的tokenizer
+    #  loading pre-trained tokenizer
     tokenizer = AutoTokenizer.from_pretrained("../model/")
 
     messages = [
-        {"role": "system", "content": "你是一个优秀的聊天机器人，总是给我正确的回应！"},
-        {"role": "user", "content": '你来自哪里？'},
-        {"role": "assistant", "content": '我来自地球'}
+        {"role": "system", "content": " you are an excellent chatbot ， always give me the right response ！"},
+        {"role": "user", "content": ' where are you from ？'},
+        {"role": "assistant", "content": ' i'm from earth '}
     ]
     new_prompt = tokenizer.apply_chat_template(
         messages,
@@ -126,16 +126,16 @@ def eval_tokenizer():
     )
     print(new_prompt)
 
-    # 获取实际词汇表长度（包括特殊符号）
+    #  get the actual vocabulary length （ includes special symbols ）
     actual_vocab_size = len(tokenizer)
-    print('tokenizer实际词表长度：', actual_vocab_size)
+    print('tokenizer actual vocabulary length ：', actual_vocab_size)
 
     model_inputs = tokenizer(new_prompt)
-    print('encoder长度：', len(model_inputs['input_ids']))
+    print('encoder length ：', len(model_inputs['input_ids']))
 
     input_ids = model_inputs['input_ids']
     response = tokenizer.decode(input_ids, skip_special_tokens=False)
-    print('decoder和原始文本是否一致：', response == new_prompt)
+    print('decoder is it consistent with the original text ：', response == new_prompt)
 
 
 def main():

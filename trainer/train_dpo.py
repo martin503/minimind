@@ -40,13 +40,13 @@ def logits_to_probs(logits, labels):
 
 
 def dpo_loss(ref_probs, probs, mask, beta):
-    # ref_probs 和 probs 都是 shape: (batch_size, seq_len)
+    # ref_probs  and  probs  all  shape: (batch_size, seq_len)
     # https://github.com/jingyaogong/minimind/issues/298
     seq_lengths = mask.sum(dim=1, keepdim=True)  # (batch_size, 1)
     ref_probs = (ref_probs * mask).sum(dim=1) / seq_lengths.squeeze()
     probs = (probs * mask).sum(dim=1) / seq_lengths.squeeze()
 
-    # 将 chosen 和 rejected 数据分开
+    #  will  chosen  and  rejected  separate data 
     batch_size = ref_probs.shape[0]
     chosen_ref_probs = ref_probs[:batch_size // 2]
     reject_ref_probs = ref_probs[batch_size // 2:]
@@ -125,7 +125,7 @@ def train_epoch(epoch, wandb):
                 state_dict = model.module.state_dict()
             else:
                 state_dict = model.state_dict()
-            state_dict = {k: v.half() for k, v in state_dict.items()}  # 半精度保存
+            state_dict = {k: v.half() for k, v in state_dict.items()}  #  half precision saving 
             torch.save(state_dict, ckp)
             model.train()
 
@@ -137,13 +137,13 @@ def init_model(lm_config):
     ckp = f'{args.save_dir}/full_sft_{lm_config.hidden_size}{moe_path}.pth'
     state_dict = torch.load(ckp, map_location=args.device)
     model.load_state_dict(state_dict, strict=False)
-    # 初始化参考模型
+    #  initialize the reference model 
     ref_model = MiniMindForCausalLM(lm_config)
     ref_model.load_state_dict(state_dict, strict=False)
     ref_model.eval()
     ref_model.requires_grad_(False)
 
-    Logger(f'LLM总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
+    Logger(f'LLM total parameter quantity ：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f}  million ')
     model = model.to(args.device)
     ref_model = ref_model.to(args.device)
 
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     parser.add_argument("--out_dir", type=str, default="../out")
     parser.add_argument("--epochs", type=int, default=2)
     parser.add_argument("--batch_size", type=int, default=4)
-    # sft阶段学习率为 「5e-6」->「5e-7」长度512，建议离线正负样本「概率」偏好对齐阶段lr <=「1e-8」长度3000，否则很容易遗忘训坏
+    # sft the learning rate of the stage is  「5e-6」->「5e-7」 length 512， offline positive and negative samples are recommended 「 probability 」 preference alignment phase lr <=「1e-8」 length 3000， otherwise, it is easy to forget and teach bad things 
     parser.add_argument("--learning_rate", type=float, default=1e-8)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", type=str, default="bfloat16")
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         args.device = torch.device(DEVICE)
         rank = dist.get_rank()
         torch.manual_seed(base_seed + rank)
-        # 同时设置 CUDA 的随机种子
+        #  setting it simultaneously  CUDA  random seeds of 
         torch.cuda.manual_seed(base_seed + rank)
 
     if args.use_wandb and (not ddp or ddp_local_rank == 0):

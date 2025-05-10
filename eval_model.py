@@ -31,53 +31,53 @@ def init_model(args):
         transformers_model_path = './MiniMind2'
         tokenizer = AutoTokenizer.from_pretrained(transformers_model_path)
         model = AutoModelForCausalLM.from_pretrained(transformers_model_path, trust_remote_code=True)
-    print(f'MiniMind模型参数量: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.2f}M(illion)')
+    print(f'MiniMind model parameter quantity : {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.2f}M(illion)')
     return model.eval().to(args.device), tokenizer
 
 
 def get_prompt_datas(args):
     if args.model_mode == 0:
-        # pretrain模型的接龙能力（无法对话）
+        # pretrain model's solitaire ability （ unable to talk ）
         prompt_datas = [
-            '马克思主义基本原理',
-            '人类大脑的主要功能',
-            '万有引力原理是',
-            '世界上最高的山峰是',
-            '二氧化碳在空气中',
-            '地球上最大的动物有',
-            '杭州市的美食有'
+            ' the basic principles of marxism ',
+            ' the main functions of the human brain ',
+            ' the principle of gravity is ',
+            ' the highest mountain in the world is ',
+            ' carbon dioxide in the air ',
+            ' the largest animal on earth is ',
+            ' the food in hangzhou is '
         ]
     else:
         if args.lora_name == 'None':
-            # 通用对话问题
+            #  general conversation issues
             prompt_datas = [
-                '请介绍一下自己。',
-                '你更擅长哪一个学科？',
-                '鲁迅的《狂人日记》是如何批判封建礼教的？',
-                '我咳嗽已经持续了两周，需要去医院检查吗？',
-                '详细的介绍光速的物理概念。',
-                '推荐一些杭州的特色美食吧。',
-                '请为我讲解“大语言模型”这个概念。',
-                '如何理解ChatGPT？',
+                ' please introduce yourself 。',
+                ' which subject are you better at ？',
+                " lu xun's 《 madman's diary 》 how to criticize feudal ethics ？",
+                ' my cough has been going on for two weeks ， do you need to go to the hospital for examination? ？',
+                ' a detailed introduction to the physical concept of the speed of light 。',
+                ' recommend some special foods in hangzhou 。',
+                ' Please explain the “Large Language Model” to me this concept 。',
+                ' how to understand ChatGPT？',
                 'Introduce the history of the United States, please.'
             ]
         else:
-            # 特定领域问题
+            #  area-specific issues
             lora_prompt_datas = {
                 'lora_identity': [
-                    "你是ChatGPT吧。",
-                    "你叫什么名字？",
-                    "你和openai是什么关系？"
+                    " who are you ChatGPT bar 。",
+                    " may i have your name ？",
+                    " you and openai what's the relationship ？"
                 ],
                 'lora_medical': [
-                    '我最近经常感到头晕，可能是什么原因？',
-                    '我咳嗽已经持续了两周，需要去医院检查吗？',
-                    '服用抗生素时需要注意哪些事项？',
-                    '体检报告中显示胆固醇偏高，我该怎么办？',
-                    '孕妇在饮食上需要注意什么？',
-                    '老年人如何预防骨质疏松？',
-                    '我最近总是感到焦虑，应该怎么缓解？',
-                    '如果有人突然晕倒，应该如何急救？'
+                    " i've been feeling dizzy lately ， what might be the reason ？",
+                    ' my cough has been going on for two weeks ， do you need to go to the hospital for examination? ？',
+                    ' what should i pay attention to when taking antibiotics ？',
+                    ' the physical examination report shows that the cholesterol is high ， what do i do ？',
+                    ' what should pregnant women pay attention to in their diet ？',
+                    ' how to prevent osteoporosis in the elderly ？',
+                    " i've always felt anxious lately ， how to alleviate ？",
+                    ' if someone faints suddenly ， how to first rescue ？'
                 ],
             }
             prompt_datas = lora_prompt_datas[args.lora_name]
@@ -85,7 +85,7 @@ def get_prompt_datas(args):
     return prompt_datas
 
 
-# 设置可复现的随机种子
+#  set reproducible random seeds
 def setup_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -103,7 +103,7 @@ def main():
     parser.add_argument('--temperature', default=0.85, type=float)
     parser.add_argument('--top_p', default=0.85, type=float)
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu', type=str)
-    # 此处max_seq_len（最大输出长度）并不意味模型具有对应的长文本的性能，仅防止QA出现被截断的问题
+    #  here max_seq_len（ maximum output length ） does not mean that the model has the corresponding long text performance ， prevent only QA there is a problem of being truncated
     # MiniMind2-moe (145M)：(hidden_size=640, num_hidden_layers=8, use_moe=True)
     # MiniMind2-Small (26M)：(hidden_size=512, num_hidden_layers=8)
     # MiniMind2 (104M)：(hidden_size=768, num_hidden_layers=16)
@@ -111,25 +111,25 @@ def main():
     parser.add_argument('--num_hidden_layers', default=8, type=int)
     parser.add_argument('--max_seq_len', default=8192, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
-    # 携带历史对话上下文条数
-    # history_cnt需要设为偶数，即【用户问题, 模型回答】为1组；设置为0时，即当前query不携带历史上文
-    # 模型未经过外推微调时，在更长的上下文的chat_template时难免出现性能的明显退化，因此需要注意此处设置
+    #  carry historical dialogue context number
+    # history_cnt need to be set to even number ， right now 【 user problems ,  model answer 】 for 1 group ； set as 0 hour ， that is the current query don't carry historical texts
+    #  when the model has not been extrapolated and fine-tuned ， in longer context chat_template it is inevitable that the performance will be significantly degraded ， therefore, you need to pay attention to the settings here
     parser.add_argument('--history_cnt', default=0, type=int)
-    parser.add_argument('--load', default=0, type=int, help="0: 原生torch权重，1: transformers加载")
+    parser.add_argument('--load', default=0, type=int, help="0:  native torch weight ，1: transformers load ")
     parser.add_argument('--model_mode', default=1, type=int,
-                        help="0: 预训练模型，1: SFT-Chat模型，2: RLHF-Chat模型，3: Reason模型，4: RLAIF-Chat模型")
+                        help="0:  pre-trained model ，1: SFT-Chat model ，2: RLHF-Chat model ，3: Reason model ，4: RLAIF-Chat model ")
     args = parser.parse_args()
 
     model, tokenizer = init_model(args)
 
     prompts = get_prompt_datas(args)
-    test_mode = int(input('[0] 自动测试\n[1] 手动输入\n'))
+    test_mode = int(input('[0]  automatic testing \n[1]  manual input \n'))
     streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 
     messages = []
     for idx, prompt in enumerate(prompts if test_mode == 0 else iter(lambda: input('👶: '), '')):
         setup_seed(random.randint(0, 2048))
-        # setup_seed(2025)  # 如需固定每次输出则换成【固定】的随机种子
+        # setup_seed(2025)  #  if you need to fix each output, change it to 【 fixed 】 random seeds of
         if test_mode == 0: print(f'👶: {prompt}')
 
         messages = messages[-args.history_cnt:] if args.history_cnt else []
