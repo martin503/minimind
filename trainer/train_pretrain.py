@@ -149,6 +149,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path", type=str, default="/home/komikadze/datasets/minimind/pretrain_hq.jsonl"
     )
+    parser.add_argument("--hf_data", action="store_true")
+    parser.add_argument("--limit_data", default=None, type=int)
     args = parser.parse_args()
 
     lm_config = MiniMindConfig(
@@ -189,7 +191,13 @@ if __name__ == "__main__":
         wandb = None
 
     model, tokenizer = init_model(lm_config)
-    train_ds = PretrainDataset(args.data_path, tokenizer, max_length=args.max_seq_len)
+    train_ds = PretrainDataset(
+        args.data_path,
+        tokenizer,
+        max_length=args.max_seq_len,
+        hf=args.hf_data,
+        limit=args.limit_data,
+    )
     train_sampler = DistributedSampler(train_ds) if ddp else None
     train_loader = DataLoader(
         train_ds,
